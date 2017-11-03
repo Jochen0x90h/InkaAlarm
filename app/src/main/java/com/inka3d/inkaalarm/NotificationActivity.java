@@ -1,6 +1,8 @@
 package com.inka3d.inkaalarm;
 
 import android.app.Activity;
+import android.app.KeyguardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.Ringtone;
@@ -13,7 +15,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 
 // this activity starts when an alarm goes off
-public class AlarmActivity extends Activity {
+public class NotificationActivity extends Activity {
 
 	Ringtone ringtone;
 
@@ -21,28 +23,25 @@ public class AlarmActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-		this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
+				| WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+				| WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+				| WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
 		setContentView(R.layout.alarm);
 
-		// load alarms
-		Data data = new Data();
-		try {
-			data.load(this);
-		} catch (Exception e) {
-		}
+		Data data = new Data(this);
 
-		// find the alarm that went off
+		// get notification id
 		int id = getIntent().getIntExtra("id", -1);
 		Button stop = findViewById(R.id.stop);
-		stop.setText(Integer.toString(id));
-		for (Notification notification : data.notifications) {
-			if (notification.id == id) {
-				if (notification.ringtoneUri != null) {
-					Uri uri = Uri.parse(notification.ringtoneUri);
-					this.ringtone = RingtoneManager.getRingtone(this, uri);
-				}
-			}
+		stop.setText("id " + Integer.toString(id));
+
+		// get notification by id
+		Notification notification = data.getNotificationById(id);
+		if (notification != null) {
+			String ringtoneUri = notification.getRingtoneUri();
+			Uri uri = Uri.parse(ringtoneUri);
+			this.ringtone = RingtoneManager.getRingtone(this, uri);
 		}
 
 		// no ringtone was found, get default alarm
@@ -58,13 +57,12 @@ public class AlarmActivity extends Activity {
 
 		// play alarm
 		this.ringtone.play();
-
 	}
 
 	@Override
-	protected void onResume() {
-		super.onResume();
-
+	protected void onDestroy() {
+		super.onDestroy();
+		this.ringtone.stop();
 	}
 
 	void stop(View v) {

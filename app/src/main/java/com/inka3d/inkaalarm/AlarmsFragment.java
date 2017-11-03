@@ -13,11 +13,13 @@ import android.view.ViewGroup;
 
 
 public class AlarmsFragment extends Fragment implements Runnable {
-	final int REFRESH_INTERVAL = 10000;
 
 	RecyclerView recyclerView;
 	RecyclerView.LayoutManager layoutManager;
 	AlarmsAdapter adapter;
+
+	// countdown refresh
+	final int REFRESH_INTERVAL = 10000;
 	Handler handler = new Handler();
 
 	@Override
@@ -46,7 +48,8 @@ public class AlarmsFragment extends Fragment implements Runnable {
 				// remove swiped item from list and notify recyclerView
 				int index = viewHolder.getAdapterPosition();
 				Log.i("ItemTouchHelper", "onSwiped " + swipeDir);
-				adapter.alarms.remove(index);
+				adapter.data.getAlarm(index).cancel(getContext());
+				adapter.data.removeAlarm(index);
 				adapter.notifyItemRemoved(index);
 			}
 		};
@@ -73,34 +76,21 @@ public class AlarmsFragment extends Fragment implements Runnable {
 	public void onResume() {
 		super.onResume();
 
-		// call run() when refresh interval elapses to update countdowns
-		this.handler.postDelayed(this, REFRESH_INTERVAL);
+		// set countdowns and start countdown refresh
+		run();
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
-		this.handler.removeCallbacks(this);
-	}
 
-	int createAlarmId() {
-		for (int id = 0; ; ++id) {
-			boolean free = true;
-			for (Alarm alarm : this.adapter.alarms) {
-				if (alarm.id == id) {
-					free = false;
-					break;
-				}
-			}
-			if (free)
-				return  id;
-		}
+		// stop countdown refresh
+		this.handler.removeCallbacks(this);
 	}
 
 	public void addAlarm(View view) {
 		Log.i("AlarmsFragment", "addAlarm");
-		int index = this.adapter.alarms.size();
-		this.adapter.alarms.add(new Alarm(createAlarmId()));//, false, 0, 0, 0, this.adapter.notifications.get(0)));
+		int index = this.adapter.data.addAlarm();
 		this.adapter.notifyItemInserted(index);
 	}
 
@@ -109,22 +99,16 @@ public class AlarmsFragment extends Fragment implements Runnable {
 		Log.i("setTime", index + " " + hour + ":" + minute);
 
 		// get alarm
-		Alarm alarm = this.adapter.alarms.get(index);
-
-		// cancel alarm
-		alarm.cancel(getContext());
+		Alarm alarm = this.adapter.data.getAlarm(index);
 
 		// set time to alarm
-		alarm.set(hour, minute);
+		alarm.setTime(hour, minute);
 
-		// set alarm to view (time)
+		// set alarm time to view if this alarm is currently visible in the list
 		AlarmsAdapter.ViewHolder viewHolder = (AlarmsAdapter.ViewHolder)recyclerView.findViewHolderForAdapterPosition(index);
 		if (viewHolder != null) {
 			viewHolder.setTime(alarm);
 		}
-
-		// set alarm to android
-		alarm.set(getContext());
 	}
 
 	@Override
@@ -132,7 +116,7 @@ public class AlarmsFragment extends Fragment implements Runnable {
 		// refresh countdowns
 		this.adapter.notifyDataSetChanged();
 
-		// request next call to run()
+		// request next call to run() after an interval
 		this.handler.postDelayed(this, REFRESH_INTERVAL);
 	}
 }

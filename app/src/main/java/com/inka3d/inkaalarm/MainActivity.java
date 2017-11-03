@@ -7,6 +7,7 @@ import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -34,11 +35,7 @@ public class MainActivity extends AppCompatActivity {
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
 
-		this.data = new Data();
-		try {
-			this.data.load(this);
-		} catch (Exception e) {
-		}
+		this.data = new Data(this);
 
 
 		// from https://developer.android.com/training/basics/fragments/fragment-ui.html
@@ -48,8 +45,16 @@ public class MainActivity extends AppCompatActivity {
 			// However, if we're being restored from a previous state,
 			// then we don't need to do anything and should return or else
 			// we could end up with overlapping fragments.
-			if (savedInstanceState != null)
+			if (savedInstanceState != null) {
+				Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.single_fragment);
+
+				if (fragment instanceof AlarmsFragment)
+					this.alarmsFragment = (AlarmsFragment)fragment;
+				else if (fragment instanceof NotificationsFragment)
+					this.notificationsFragment = (NotificationsFragment)fragment;
+
 				return;
+			}
 
 			// Create a new Fragment to be placed in the activity layout
 			this.alarmsFragment = new AlarmsFragment();
@@ -73,10 +78,7 @@ public class MainActivity extends AppCompatActivity {
 		super.onPause();
 
 		// save data
-		try {
-			this.data.save(this);
-		} catch (Exception e) {
-		}
+		//this.data.save();
 	}
 
 	@Override

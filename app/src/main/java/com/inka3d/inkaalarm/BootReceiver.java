@@ -11,22 +11,14 @@ import java.util.List;
 public class BootReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent bootIntent) {
-		// device has booted: load alarms and set to alarm manager
-		List<Alarm> alarms = new ArrayList<>();
-		try {
-			// read alarms
-			Data data = new Data();
-			try {
-				data.load(context);
-			} catch (Exception e) {
-			}
+		// device has booted: set alarms to alarm manager
 
-			// set alarms to android
-			for (Alarm alarm : data.alarms) {
-				alarm.set(context);
-			}
-		} catch (Exception e) {
-			// could not read alarms. ignore for now
+		Data data = new Data(context);
+
+		// set alarms to android
+		int count = data.getAlarmCount();
+		for (int i = 0; i < count; ++i) {
+			data.getAlarm(i).set(context);
 		}
 	}
 }

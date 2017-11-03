@@ -22,8 +22,7 @@ import java.util.List;
 
 public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder> {
 	FragmentManager fragmentManager;
-	public List<Notification> notifications = new ArrayList<>();
-	public List<Alarm> alarms = new ArrayList<>();
+	public Data data;
 
 
 	public static final int [] dayIds = {
@@ -55,57 +54,56 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 				this.days[i] = v.findViewById(dayIds[i]);
 
 			// fill drop-down list: https://www.mkyong.com/android/android-spinner-drop-down-list-example/
-			List<String> list = new ArrayList<>();
-			list.add("Default");
-			for (Notification notification : notifications) {
-				list.add(notification.name);
-			}
+			List<String> names = new ArrayList<>();
+			names.add("Default");
+			data.getNotificationNames(names);
+			/*
+			for (Notification notification : data.notifications) {
+				names.add(notification.name);
+			}*/
 			ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(v.getContext(),
-					android.R.layout.simple_spinner_item, list);
+					android.R.layout.simple_spinner_item, names);
 			dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 			this.notification.setAdapter(dataAdapter);
-			//this.notification.setSelection(0);
 		}
 
 		public void set(Alarm alarm) {
 			setTime(alarm);
-			this.enabled.setChecked(alarm.enabled);
+			this.enabled.setChecked(alarm.isEnabled());
+			int days = alarm.getDays();
 			for (int i = 0; i < 7; ++i) {
-				days[i].setChecked((alarm.dayBits & (1 << i)) != 0);
+				this.days[i].setChecked((days & (1 << i)) != 0);
 			}
 
-			// find index of notification (0 is default)
-			int i = 1;
-			for (Notification notification : notifications) {
-				if (notification.id == alarm.notificationId) {
-					this.notification.setSelection(i);
-				}
-			}
-			if (i > notifications.size())
-				this.notification.setSelection(0);
+			// set index of notification to dropdown (0 is default, 1 is first notification)
+			this.notification.setSelection(data.getNotificationIndexById(alarm.getNotificationId()) + 1);
 		}
 
 		public void setTime(Alarm alarm) {
+			int hour = alarm.getHour();
+			int minute = alarm.getMinute();
+
 			// set time view
 			android.text.format.DateFormat dateFormat = new android.text.format.DateFormat();
 			if (dateFormat.is24HourFormat(this.time.getContext())) {
 				// 24 hour
-				this.time.setText(alarm.hour + ":" + String.format("%02d", alarm.minute));
+				this.time.setText(hour + ":" + String.format("%02d", minute));
 				this.ampm.setText("");
 			} else {
 				// 12 hour am/pm
-				int hour = alarm.hour % 12;
-				hour = hour == 0 ? 12 : hour;
-				this.time.setText(hour + ":" + String.format("%02d", alarm.minute));
-				this.ampm.setText(alarm.hour < 12 ? "AM" : "PM");
+				int h12 = hour % 12;
+				h12 = h12 == 0 ? 12 : h12;
+				this.time.setText(h12 + ":" + String.format("%02d", minute));
+				this.ampm.setText(hour < 12 ? "AM" : "PM");
 			}
 
 			setCountdown(alarm, Calendar.getInstance());
 		}
 
 		public void setCountdown(Alarm alarm, Calendar now) {
-			if (alarm.enabled && alarm.dayBits != 0) {
-				int aMinutes = alarm.hour * 60 + alarm.minute;
+			int days = alarm.getDays();
+			if (alarm.isEnabled() && days != 0) {
+				int aMinutes = alarm.getHour() * 60 + alarm.getMinute();
 				int nMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
 				int weekDay = Alarm.getWeekDay(now);
 
@@ -120,7 +118,7 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 				// search for first day for which the alarm is enabled
 				for (int d = weekDay; d < weekDay + 7; ++d) {
 					int day = d % 7;
-					if ((alarm.dayBits & (1 << day)) != 0) {
+					if ((days & (1 << day)) != 0) {
 
 						break;
 					}
@@ -139,8 +137,7 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 	public AlarmsAdapter(AlarmsFragment fragment) {
 		MainActivity mainActivity = (MainActivity)fragment.getActivity();
 		this.fragmentManager = mainActivity.getFragmentManager();
-		this.notifications = mainActivity.data.notifications;
-		this.alarms = mainActivity.data.alarms;
+		this.data = mainActivity.data;
 	}
 
 	// create new views (invoked by the layout manager)
@@ -159,7 +156,7 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 	@Override
 	public void onBindViewHolder(final ViewHolder viewHolder, final int position) {
 		// get alarm at given position
-		final Alarm alarm = this.alarms.get(position);
+		final Alarm alarm = this.data.getAlarm(position);
 
 		// replace the contents of the view for the list row
 		viewHolder.set(alarm);
@@ -168,14 +165,14 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 		viewHolder.time.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				// create the time pickerdialog
+				// create the time picker dialog
 				DialogFragment f = new TimePickerFragment();
 
-				// set initial time
+				// set current time of alarm for time picker
 				Bundle args = new Bundle();
 				args.putInt("index", position);
-				args.putInt("hour", alarm.hour);
-				args.putInt("minute", alarm.minute);
+				args.putInt("hour", alarm.getHour());
+				args.putInt("minute", alarm.getMinute());
 				f.setArguments(args);
 
 				// show TimePickerFragment to select a time
@@ -186,11 +183,15 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 		// set listener to notification dropdown
 		viewHolder.notification.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
-			public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-				if (position >= 1 && position <= notifications.size())
-					alarm.notificationId = notifications.get(position - 1).id;
-				else
-					alarm.notificationId = -1;
+			public void onItemSelected(AdapterView<?> adapterView, View view, int dropdownPosition, long id) {
+				// get notification id for dropdown position (position 0 is default)
+				int notificationId = 0;
+				if (dropdownPosition >= 1 && dropdownPosition <= data.getNotificationCount())
+					notificationId = data.getNotificationId(dropdownPosition - 1);
+
+				// set notification id
+				if (alarm.getNotificationId() != notificationId)
+					alarm.setNotificationId(notificationId);
 			}
 
 			@Override
@@ -204,17 +205,11 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 			public void onClick(View view) {
 				Switch sw = (Switch)view;
 
-				// cancel alarm
-				alarm.cancel(view.getContext());
-
 				// set enabled state to alarm
-				alarm.enabled = sw.isChecked();
+				alarm.setEnabled(sw.isChecked());
 
 				// set alarm to view (update or hide countdown)
 				viewHolder.setCountdown(alarm, Calendar.getInstance());
-
-				// set alarm to android
-				alarm.set(view.getContext());
 
 				Log.i("toggleAlarm", viewHolder.getAdapterPosition() + " " + sw.isChecked());
 			}
@@ -235,20 +230,14 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 					dayBit <<= 1;
 				}
 
-				// cancel alarm
-				alarm.cancel(view.getContext());
-
 				// set day to alarm
 				if (button.isChecked())
-					alarm.dayBits |= dayBit;
+					alarm.setDays(alarm.getDays() | dayBit);
 				else
-					alarm.dayBits &= ~dayBit;
+					alarm.setDays(alarm.getDays() & ~dayBit);
 
 				// set alarm to view (update or hide countdown)
 				viewHolder.setCountdown(alarm, Calendar.getInstance());
-
-				// set alarm to android
-				alarm.set(view.getContext());
 
 				Log.i("toggleDay", viewHolder.getAdapterPosition() + " " + dayBit + " " + button.isChecked());
 			}
@@ -260,6 +249,6 @@ public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder
 	// Return the size of your dataset (invoked by the layout manager)
 	@Override
 	public int getItemCount() {
-		return alarms.size();
+		return data.getAlarmCount();
 	}
 }

@@ -7,85 +7,66 @@ import android.content.Intent;
 
 import java.util.Calendar;
 
+abstract public class Alarm {
+	// id of alarm (key in database and alarm manager)
+	final int id;
 
-public class Alarm {
-	// id of alarm (needed to cancel the alarm)
-	int id;
+	abstract void setEnabled(boolean enabled);
+	abstract boolean isEnabled();
 
-	// alarm is enabled
-	boolean enabled;
+	abstract void setTime(int hour, int minute);
+	abstract int getHour();
+	abstract int getMinute();
 
-	// alarm time
-	int hour;
-	int minute;
+	abstract void setDays(int dayBits);
+	abstract int getDays();
 
-	// for each day a flag indicating if the alarm should take place
-	int dayBits;
+	abstract void setNotificationId(int notificationId);
+	abstract int getNotificationId();
 
-	// id of notification to start when alarm goes off
-	int notificationId;
 
-	Alarm(int id) {
+	public Alarm(int id) {
 		this.id = id;
-		this.enabled = false;
-		this.hour = 0;
-		this.minute = 0;
-		this.dayBits = 0;
-		this.notificationId = -1;
-	}
-
-	Alarm(int id, boolean enabled, int hour, int minute, int dayBits, int notificationId) {
-		this.id = id;
-		this.enabled = enabled;
-		this.hour = hour;
-		this.minute = minute;
-		this.dayBits = dayBits;
-		this.notificationId = notificationId;
-	}
-
-	void set(int hour, int minute) {
-		this.hour = hour;
-		this.minute = minute;
 	}
 
 	/**
 	 * Set alarm to android AlarmManager
 	 * @param context context (e.g. activity) to used to get the AlarmManager
 	 */
-	void set(Context context) {
-		if (this.enabled && this.dayBits != 0) {
-			final int millisPerDay = 24 * 60 * 60 * 1000;
+	protected void set(Context context) {
+		int days = getDays();
+		if (isEnabled() && days != 0) {
 			AlarmManager am = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
 
 			Calendar calendar = Calendar.getInstance();
 			long now = calendar.getTimeInMillis();
 			calendar.setLenient(true);
-			calendar.set(Calendar.HOUR_OF_DAY, hour);
-			calendar.set(Calendar.MINUTE, minute);
+			calendar.set(Calendar.HOUR_OF_DAY, getHour());
+			calendar.set(Calendar.MINUTE, getMinute());
 			calendar.set(Calendar.SECOND, 0);
 			calendar.set(Calendar.MILLISECOND, 0);
-			calendar.getTimeInMillis(); // recompute internal time
 			long time = calendar.getTimeInMillis();
 			int weekDay = getWeekDay(calendar);
 
 			// check if rollover to next day
-			if (time < now) {
-				time += millisPerDay;
+			if (time <= now) {
+				time += AlarmManager.INTERVAL_DAY;
 				++weekDay;
 			}
 
-			//Intent intent = new Intent(context, AlarmReceiver.class);
-			Intent intent = new Intent("com.inka3d.inkaalarm.ALARM_RECIEVED");
-			intent.putExtra("id", this.notificationId);
+			Intent intent = new Intent(context, AlarmReceiver.class);
+			//Intent intent = new Intent("com.inka3d.inkaalarm.ALARM_RECIEVED");
+			intent.putExtra("id", this.id);//this.notificationId);
 			for (int d = weekDay; d < weekDay + 7; ++d) {
 				int day = d % 7;
-				if ((this.dayBits & (1 << day)) != 0) {
-					PendingIntent pendingIntent = PendingIntent.getBroadcast(context, this.id * 7 + day, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-					am.setRepeating(AlarmManager.RTC_WAKEUP, time, 7 * millisPerDay, pendingIntent);
+				if ((days & (1 << day)) != 0) {
+					PendingIntent pendingIntent = PendingIntent.getBroadcast(context, this.id, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+					am.setExact(AlarmManager.RTC_WAKEUP, time, pendingIntent);
+					break;
 				}
 
 				// next day
-				time += millisPerDay;
+				time += AlarmManager.INTERVAL_DAY;
 			}
 		}
 	}
@@ -94,22 +75,19 @@ public class Alarm {
 	 * Cancel alarm in android AlarmManager
 	 * @param context context (e.g. activity) to used to get the AlarmManager
 	 */
-	void cancel(Context context) {
-		if (this.enabled && this.dayBits != 0) {
+	protected void cancel(Context context) {
+		if (isEnabled() && getDays() != 0) {
 			AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
-			Intent intent = new Intent("com.inka3d.inkaalarm.ALARM_RECIEVED");
-			for (int day = 0; day < 7; ++day) {
-				if ((this.dayBits & (1 << day)) != 0) {
-					PendingIntent pendingIntent = PendingIntent.getBroadcast(context, this.id * 7 + day, intent, 0);
-					am.cancel(pendingIntent);
-				}
-			}
+			Intent intent = new Intent(context, AlarmReceiver.class);
+			//Intent intent = new Intent("com.inka3d.inkaalarm.ALARM_RECIEVED");
+			PendingIntent pendingIntent = PendingIntent.getBroadcast(context, this.id, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+			am.cancel(pendingIntent);
 		}
 	}
 
 	// get day of week when the alarm takes place the next time (ignoring dayBits)
-	static int getWeekDay(Calendar calendar) {
+	public static int getWeekDay(Calendar calendar) {
 		switch (calendar.get(Calendar.DAY_OF_WEEK)) {
 			case Calendar.MONDAY:
 				return 0;

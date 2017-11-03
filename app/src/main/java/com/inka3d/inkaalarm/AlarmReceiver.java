@@ -14,11 +14,22 @@ public class AlarmReceiver extends BroadcastReceiver {
 				PowerManager.ON_AFTER_RELEASE, "Alarm");
 		wakeLock.acquire();
 
-		int id = intent.getIntExtra("id", -1);
+		Data data = new Data(context);
 
-		Intent i = new Intent(context, AlarmActivity.class);
-		i.putExtra("id", id);
-		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		// get id of alarm that went off
+		int id = intent.getIntExtra("id", -1);
+		Alarm alarm = data.getAlarmById(id);
+
+		// set next alarm
+		alarm.set(context);
+
+		// start NotificationActivity
+		Intent i = new Intent(context, NotificationActivity.class);
+		i.putExtra("id", alarm.getNotificationId());
+		i.addFlags(Intent.FLAG_FROM_BACKGROUND | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK
+				| Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		context.startActivity(i);
+
+		wakeLock.release();
 	}
 }

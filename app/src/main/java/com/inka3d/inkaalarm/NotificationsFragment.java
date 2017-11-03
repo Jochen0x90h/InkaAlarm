@@ -49,14 +49,7 @@ public class NotificationsFragment extends Fragment {
 				int index = viewHolder.getAdapterPosition();
 				Log.i("ItemTouchHelper", "onSwiped " + swipeDir);
 
-				// set notificationId of alarms to -1 that use this notification
-				Notification notification = adapter.notifications.get(index);
-				for (Alarm alarm : adapter.alarms) {
-					if (alarm.notificationId == notification.id)
-						alarm.notificationId = -1;
-				}
-
-				adapter.notifications.remove(index);
+				adapter.data.removeNotification(index);
 				adapter.notifyItemRemoved(index);
 			}
 		};
@@ -79,24 +72,9 @@ public class NotificationsFragment extends Fragment {
 		return view;
 	}
 
-	int createNotificationId() {
-		for (int id = 0; ; ++id) {
-			boolean free = true;
-			for (Notification notification : this.adapter.notifications) {
-				if (notification.id == id) {
-					free = false;
-					break;
-				}
-			}
-			if (free)
-				return  id;
-		}
-	}
-
 	public void addNotification(View view) {
 		Log.i("NotificationsFragment", "addNotification");
-		int index = this.adapter.notifications.size();
-		this.adapter.notifications.add(new Notification(createNotificationId()));
+		int index = this.adapter.data.addNotification();
 		this.adapter.notifyItemInserted(index);
 	}
 

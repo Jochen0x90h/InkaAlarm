@@ -21,8 +21,7 @@ import java.util.List;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdapter.ViewHolder> {
 	NotificationsFragment notificationsFragment;
-	List<Notification> notifications = new ArrayList<>();
-	List<Alarm> alarms = new ArrayList<>();
+	Data data;
 
 	// ringtone names and uris that are available on this phone
 	List<String> ringtoneNames = new ArrayList<>();
@@ -52,12 +51,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 		}
 
 		public void set(Notification notification) {
-			this.name.setText(notification.name);
-			int index = ringtoneUris.indexOf(notification.ringtoneUri);
+			this.name.setText(notification.getName());
+			int index = ringtoneUris.indexOf(notification.getRingtoneUri());
 			if (index == -1)
 				index = 0;
 			this.ringtone.setSelection(index);
-			this.request.setText(notification.request);
+			this.request.setText(notification.getRequest());
 		}
 	}
 
@@ -65,8 +64,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 	public NotificationsAdapter(NotificationsFragment fragment) {
 		this.notificationsFragment = fragment;
 		MainActivity mainActivity = (MainActivity)fragment.getActivity();
-		this.notifications = mainActivity.data.notifications;
-		this.alarms = mainActivity.data.alarms;
+		this.data = mainActivity.data;
 
 		this.ringtoneNames.add("Default");
 		this.ringtoneUris.add(null);
@@ -104,9 +102,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
 	// replace the contents of a view (invoked by the layout manager)
 	@Override
-	public void onBindViewHolder(ViewHolder viewHolder, int position) {
+	public void onBindViewHolder(ViewHolder viewHolder, final int position) {
 		// get alarm at given position
-		final Notification notification = this.notifications.get(position);
+		final Notification notification = this.data.getNotification(position);
 
 		// replace the contents of the view for the list row
 		viewHolder.set(notification);
@@ -120,7 +118,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
 			@Override
 			public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-				notification.name = charSequence.toString();
+				notification.setName(charSequence.toString());
 			}
 
 			@Override
@@ -129,9 +127,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 		});
 		viewHolder.ringtone.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
-			public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-				notification.ringtoneName = ringtoneNames.get(position);
-				notification.ringtoneUri = ringtoneUris.get(position);
+			public void onItemSelected(AdapterView<?> adapterView, View view, int dropdownPosition, long id) {
+				notification.setRingtone(ringtoneNames.get(dropdownPosition), ringtoneUris.get(dropdownPosition));
 			}
 
 			@Override
@@ -141,13 +138,13 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 		viewHolder.testRingtone.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				notificationsFragment.play(notification.ringtoneUri);
+				notificationsFragment.play(notification.getRingtoneUri());
 			}
 		});
 	}
 
 	@Override
 	public int getItemCount() {
-		return this.notifications.size();
+		return this.data.getNotificationCount();
 	}
 }
