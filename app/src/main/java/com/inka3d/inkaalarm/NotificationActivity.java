@@ -14,7 +14,9 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 
-// this activity starts when an alarm goes off
+/**
+ * This activity gets started by AlarmReceiver when an alarm goes off
+ */
 public class NotificationActivity extends Activity {
 
 	Ringtone ringtone;
@@ -38,25 +40,18 @@ public class NotificationActivity extends Activity {
 
 		// get notification by id
 		Notification notification = data.getNotificationById(id);
-		if (notification != null) {
-			String ringtoneUri = notification.getRingtoneUri();
-			Uri uri = Uri.parse(ringtoneUri);
-			this.ringtone = RingtoneManager.getRingtone(this, uri);
-		}
 
-		// no ringtone was found, get default alarm
-		if (this.ringtone == null) {
-			Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-			this.ringtone = RingtoneManager.getRingtone(this, uri);
-		}
+		// get ringtone uri
+		Uri ringtoneUri = notification != null ? notification.getRingtoneUri()
+				: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
 
-		// set usage to alarm so that alarm volume is used
-		this.ringtone.setAudioAttributes(new AudioAttributes.Builder()
-			.setUsage(AudioAttributes.USAGE_ALARM)
-			.build());
-
-		// play alarm
-		this.ringtone.play();
+		// play ringtone
+		this.ringtone = Notification.playRingtone(this, ringtoneUri);
+		
+		// execute command
+		Notification.Command command = notification.getCommand();
+		//if (!command.host.isEmpty() && !command.command.isEmpty())
+			new CommandTask().execute(command);
 	}
 
 	@Override

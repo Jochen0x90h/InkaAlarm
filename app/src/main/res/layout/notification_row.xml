@@ -9,7 +9,6 @@
 		android:id="@+id/name"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_margin="8dp"
 		android:hint="name"/>
 
 	<LinearLayout
@@ -20,12 +19,13 @@
 			android:id="@+id/ringtone"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:layout_margin="8dp"
+			android:layout_gravity="center_vertical"
 			android:layout_weight="1"/>
 		<ImageButton
 			android:id="@+id/test_ringtone"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
+			android:layout_gravity="center_vertical"
 			android:src="@mipmap/ic_play_circle_outline_black_24dp"
 			style="?android:attr/borderlessButtonStyle"/>
 	</LinearLayout>
@@ -34,17 +34,43 @@
 		android:orientation="horizontal"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content">
-		<EditText
-			android:id="@+id/request"
+		<LinearLayout
+			android:orientation="vertical"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:layout_margin="8dp"
-			android:layout_weight="1"
-			android:hint="request url"/>
+			android:layout_weight="1">
+			<Spinner
+				android:id="@+id/node"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"/>
+			<SeekBar
+				android:id="@+id/blinds"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:max="99"/>
+			<SeekBar
+				android:id="@+id/slat"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:max="99"/>
+
+			<!-- EditText
+				android:id="@+id/host"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="192.168.1.181:8083"
+				android:hint="host:port"/>
+			<EditText
+				android:id="@+id/command"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:hint="set Lamp1 on; set Lamp2 on"/ -->
+		</LinearLayout>
 		<ImageButton
-			android:id="@+id/test_request"
+			android:id="@+id/test_command"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
+			android:layout_gravity="center_vertical"
 			android:src="@mipmap/ic_play_circle_outline_black_24dp"
 			style="?android:attr/borderlessButtonStyle"/>
 	</LinearLayout>

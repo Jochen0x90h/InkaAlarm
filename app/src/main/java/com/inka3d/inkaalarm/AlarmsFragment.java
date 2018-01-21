@@ -11,7 +11,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-
+/**
+ * This fragment is for configuring the alarms (alarm clock icon in the menu bar)
+ */
 public class AlarmsFragment extends Fragment implements Runnable {
 
 	RecyclerView recyclerView;

@@ -7,6 +7,9 @@ import android.content.Intent;
 
 import java.util.Calendar;
 
+/**
+ * Data container for an alarm (contains time, week days and notification id)
+ */
 abstract public class Alarm {
 	// id of alarm (key in database and alarm manager)
 	final int id;

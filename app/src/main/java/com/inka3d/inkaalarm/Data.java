@@ -1,6 +1,7 @@
 package com.inka3d.inkaalarm;
 
 import android.content.Context;
+import android.net.Uri;
 import android.util.AtomicFile;
 
 import org.json.JSONArray;
@@ -15,7 +16,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-
+/**
+ * Data container for all data (alarms, notifications) that uses json files
+ */
 public class Data {
 	protected Context context;
 	protected JSONObject jRoot;
@@ -23,10 +26,10 @@ public class Data {
 	protected JSONArray jAlarms;
 
 
-	class NotificationWrapper extends Notification {
+	class JsonNotification extends Notification {
 		JSONObject jNotification;
 
-		NotificationWrapper(int id, JSONObject jNotification) {
+		JsonNotification(int id, JSONObject jNotification) {
 			super(id);
 			this.jNotification = jNotification;
 		}
@@ -46,10 +49,10 @@ public class Data {
 		}
 
 		@Override
-		public void setRingtone(String ringtoneName, String ringtoneUri) {
+		public void setRingtone(String ringtoneName, Uri ringtoneUri) {
 			try {
 				this.jNotification.put("ringtoneName", ringtoneName);
-				this.jNotification.put("ringtoneUri", ringtoneUri);
+				this.jNotification.put("ringtoneUri", ringtoneUri.toString());
 			} catch (JSONException e) {
 			}
 			save();
@@ -61,29 +64,38 @@ public class Data {
 		}
 
 		@Override
-		public String getRingtoneUri() {
-			return jNotification.optString("ringtoneUri");
+		public Uri getRingtoneUri() {
+			// returns empty string ("") if not found
+			return Uri.parse(jNotification.optString("ringtoneUri"));
 		}
 
 		@Override
-		public void setRequest(String request) {
+		public void setCommand(int blinds, int slat) {//String host, String command) {
 			try {
-				this.jNotification.put("request", request);
+				//this.jNotification.put("host", host);
+				//this.jNotification.put("command", command);
+				this.jNotification.put("blinds", blinds);
+				this.jNotification.put("slat", slat);
 			} catch (JSONException e) {
 			}
 			save();
 		}
 
 		@Override
-		public String getRequest() {
-			return jNotification.optString("request");
+		public Command getCommand() {
+			return new Command(
+					jNotification.optInt("blinds"),
+					jNotification.optInt("slat"));
+			//return new Command(
+			//		jNotification.optString("host"),
+			//		jNotification.optString("command"));
 		}
 	}
 
-	class AlarmWrapper extends Alarm {
+	class JsonAlarm extends Alarm {
 		JSONObject jAlarm;
 
-		AlarmWrapper(int id, JSONObject jAlarm) {
+		JsonAlarm(int id, JSONObject jAlarm) {
 			super(id);
 			this.jAlarm = jAlarm;
 		}
@@ -234,7 +246,7 @@ public class Data {
 		try {
 			JSONObject jNotification = this.jNotifications.getJSONObject(index);
 			int id = jNotification.getInt("id");
-			return new NotificationWrapper(id, jNotification);
+			return new JsonNotification(id, jNotification);
 		} catch (JSONException e) {
 			return null;
 		}
@@ -306,7 +318,7 @@ public class Data {
 		try {
 			JSONObject jAlarm = this.jAlarms.getJSONObject(index);
 			int id = jAlarm.getInt("id");
-			return new AlarmWrapper(id, jAlarm);
+			return new JsonAlarm(id, jAlarm);
 		} catch (JSONException e) {
 			return null;
 		}

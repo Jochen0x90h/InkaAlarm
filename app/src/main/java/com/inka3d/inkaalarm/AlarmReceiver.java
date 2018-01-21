@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 
-// called whan an alarm goes off
+/**
+ * called by android whan an alarm goes off
+ */
 public class AlarmReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {

@@ -7,10 +7,12 @@ import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.widget.TimePicker;
 
-
-// https://developer.android.com/guide/topics/ui/dialogs.html
-// https://developer.android.com/guide/topics/ui/controls/pickers.html
-// https://developer.android.com/reference/android/app/DialogFragment.html
+/**
+ * Sows the standard android time picker
+ * https://developer.android.com/guide/topics/ui/dialogs.html
+ * https://developer.android.com/guide/topics/ui/controls/pickers.html
+ * https://developer.android.com/reference/android/app/DialogFragment.html
+ */
 public class TimePickerFragment extends DialogFragment
 		implements TimePickerDialog.OnTimeSetListener {
 

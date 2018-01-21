@@ -19,7 +19,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-
+/**
+ * Represents one row in the list of alarms in a AlarmsFragment
+ */
 public class AlarmsAdapter extends RecyclerView.Adapter<AlarmsAdapter.ViewHolder> {
 	FragmentManager fragmentManager;
 	public Data data;

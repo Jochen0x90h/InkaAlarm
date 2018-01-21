@@ -1,6 +1,8 @@
 package com.inka3d.inkaalarm;
 
 
+import android.content.Context;
+import android.media.AudioAttributes;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -14,6 +16,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * This fragment is for configuring the notifications (bell icon in the menu bar)
+ */
 public class NotificationsFragment extends Fragment {
 
 	RecyclerView recyclerView;
@@ -81,19 +94,18 @@ public class NotificationsFragment extends Fragment {
 	@Override
 	public void onPause() {
 		super.onPause();
+
+		// stop ringtone if it is still playing
 		if (this.ringtone != null) {
 			this.ringtone.stop();
 			this.ringtone = null;
 		}
-
 	}
 
-	void play(String uri) {
+	// called when play button next to the ringtone name is pressed
+	void testRingtone(Uri uri) {
 		if (this.ringtone == null || !this.ringtone.isPlaying()) {
-			if (uri != null) {
-				this.ringtone = RingtoneManager.getRingtone(getContext(), Uri.parse(uri));
-				this.ringtone.play();
-			}
+			this.ringtone = Notification.playRingtone(getContext(), uri);
 		} else {
 			this.ringtone.stop();
 			this.ringtone = null;
